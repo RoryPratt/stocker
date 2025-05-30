@@ -1,0 +1,22 @@
+Data to Collect
+
+
+Constants:
+
+Number employees - wikipedia
+Industry - wikipedia
+Area Served - wikipedia
+
+
+Dynamics:
+
+Volume - Yahoo Finance 
+Open - Yahoo Finance
+Market Cap - Yahoo Finance
+
+
+Articles:
+
+Sentiment Analysis
+Time Published
+Publisher
