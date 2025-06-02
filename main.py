@@ -1,22 +1,24 @@
 from data_collection import Stock
 from typing import List, Callable, Tuple, Any, Match
-import match
+from match import match
 
+print("Stonks\n")
+stock = Stock(input("What stock do you want to analyze? "))
 
 def bye_action(dummy: List[str]) -> None:
     raise KeyboardInterrupt
 
+def switch_stock(name):
+    stock = Stock(name)
 
-
-stock = Stock(input("What stock do you want to analyze? "))
-
+def print_stock(str): print(stock)
 
 Pattern = List[str]
 Action = Callable[[List[str]], List[Any]]
 
 pa_list: List[Tuple[Pattern, Action]] = [
-    ("Analyze %".split(), stock.get_stock),
-    ()
+    ("Analyze %".split(), switch_stock),
+    ("Print data %".split(), print_stock),
     (["bye"], bye_action),
 ]
 
@@ -43,7 +45,6 @@ def search_pa_list(src: List[str]) -> List[str]:
 def query_loop() -> None:
     """The simple query loop. The try/except structure is to catch Ctrl-C or Ctrl-D
     characters and exit gracefully"""
-    print("Chess is better than Go!\n")
     while True:
         try:
             print()
