@@ -11,14 +11,14 @@ def bye_action(dummy: List[str]) -> None:
 def switch_stock(name):
     stock = Stock(name)
 
-def print_stock(str): print(stock)
+def print_stock(_): return [stock]
 
 Pattern = List[str]
 Action = Callable[[List[str]], List[Any]]
 
 pa_list: List[Tuple[Pattern, Action]] = [
-    ("Analyze %".split(), switch_stock),
-    ("Print data %".split(), print_stock),
+    ("analyze %".split(), switch_stock),
+    ("print data".split(), print_stock),
     (["bye"], bye_action),
 ]
 

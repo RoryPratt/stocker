@@ -16,12 +16,8 @@ def get_page_html(title: str) -> str:
     Returns:
         html of the page
     """
-    try:
-        results = wikipedia.search(title)
-        return WikipediaPage(results[0]).html()
-    except:
-        results = wikipedia.search(title + " company").html()
-        return WikipediaPage(results[0]).html
+    results = wikipedia.search(title)
+    return WikipediaPage(results[0]).html()
 
 
 def get_first_infobox_text(html: str) -> str:
@@ -83,22 +79,22 @@ class Stock:
         self.name = name
         self.raw_wiki = ""
         self.patterns = [
-            r"Traded asNasdaq: (?P<ticker>[A-Z]+)Nas",
-            r"Industry(?P<industry>[\w ]+)Pred",
-            #r"Number of employees (?P<employees>[0-9,]+)",
+            #r"Traded asNasdaq: (?P<ticker>[A-Z]+)Nas",
+            r"Industry(?P<industry>[[A-Z][a-z ]+]+)[A-Z][a-z0-9]+",
+            #r"Number of employees(?P<employees>[0-9,]+)",
             #r"Area served(?P<area_served>\w+)Key"
         ]
         
         self.load_stock()
 
     def __str__(self):
-        return f"{self.ticker} / {self.name} \nIndustry: {self.Industry}"
+        return f"Name: {self.ticker} / {self.name} \nIndustry: {self.industry}\nNumber of Employees: {self.employees}"
 
     def load_stock(self):
         infobox_text = clean_text(get_first_infobox_text(get_page_html(self.name)))
         self.raw_wiki = infobox_text
 
-        #(self.raw_wiki)
+        print(self.raw_wiki)
 
         error_text = (
             "Page infobox has no information"
@@ -110,3 +106,4 @@ class Stock:
 
         self.ticker = match.group("ticker")
         self.industry = match.group("industry")
+        self.employees = match.group("employees")
