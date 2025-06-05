@@ -2,6 +2,7 @@ from data_collection import Stock
 from typing import List, Callable, Tuple, Any, Match
 from match import match
 import matplotlib.pyplot as plt
+from naive_classifier import BayesClassifier
 
 print("Stonks\n")
 stock = Stock(input("What stock do you want to analyze? "))
@@ -12,12 +13,26 @@ def bye_action(dummy: List[str]) -> None:
 def switch_stock(name):
     global stock
     stock = Stock(name)
-    return ["success"]
+    return [""]
 
 def print_stock(_): return [stock]
 
 def train_model(_):
-    pass
+    global stock
+    
+    bayes = BayesClassifier(stock.historic_data, stock.ticker)
+
+
+    #inputs
+
+    #outputs
+
+
+    #mlpclassifier
+    
+    return [bayes.classify("how do you do today war war war.")]
+
+
 
 def graph_data(matches):
     graph_type = matches[0]

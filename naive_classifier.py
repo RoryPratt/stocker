@@ -1,6 +1,6 @@
 import math, os, pickle, re
 from typing import Tuple, List, Dict
-
+from datetime import datetime, timedelta
 
 class BayesClassifier:
     """A simple BayesClassifier implementation
@@ -15,7 +15,7 @@ class BayesClassifier:
         pos_file_prefix - prefix of positive reviews
     """
 
-    def __init__(self):
+    def __init__(self, stock_data, ticker):
         """Constructor initializes and trains the Naive Bayes Sentiment Classifier. If a
         cache of a trained classifier is stored in the current folder it is loaded,
         otherwise the system will proceed through training.  Once constructed the
@@ -23,22 +23,27 @@ class BayesClassifier:
         # initialize attributes
         self.pos_freqs: Dict[str, int] = {}
         self.neg_freqs: Dict[str, int] = {}
-        self.pos_filename: str = "pos.dat"
-        self.neg_filename: str = "neg.dat"
-        self.training_data_directory: str = "movie_reviews/"
-        self.neg_file_prefix: str = "movies-1"
-        self.pos_file_prefix: str = "movies-5"
+        self.net_freqs: Dict[str, int] = {}
+
+        if not os.path.exists(f"ai/{ticker}"):
+            os.makedirs(f"ai/{ticker}")
+
+        self.pos_filename: str = f"ai/{ticker}/pos.dat"
+        self.neg_filename: str = f"ai/{ticker}/neg.dat"
+        self.net_filename: str = f"ai/{ticker}/net.dat"
+        self.training_data_directory: str = "wiki_data/"
 
         # check if both cached classifiers exist within the current directory
-        if os.path.isfile(self.pos_filename) and os.path.isfile(self.neg_filename):
+        if os.path.isfile(self.pos_filename) and os.path.isfile(self.neg_filename) and os.path.isfile(self.net_filename):
             print("Data files found - loading to use cached values...")
             self.pos_freqs = self.load_dict(self.pos_filename)
             self.neg_freqs = self.load_dict(self.neg_filename)
+            self.net_freqs = self.load_dict(self.net_filename)
         else:
             print("Data files not found - running training...")
-            self.train()
+            self.train(stock_data)
 
-    def train(self) -> None:
+    def train(self, stock_data) -> None:
         """Trains the Naive Bayes Sentiment Classifier
 
         Train here means generates `pos_freq/neg_freq` dictionaries with frequencies of
@@ -55,20 +60,31 @@ class BayesClassifier:
             raise RuntimeError(f"Couldn't find path {self.training_data_directory}")
         
         for file in files:
-            is_positive = file.split("-")[1]=="5"
+            date = datetime.strptime(file.split("_")[1].replace(".txt", ""), "%Y-%m-%d") + timedelta(days=1)
 
-            file_data = open("movie_reviews/" + file, "r", encoding="latin1").read()
+            try:
+                day1 = stock_data.loc[file.split("_")[1].replace(".txt", ""), "Close"]
+                day2 = stock_data.loc[date.strftime("%Y-%m-%d"), "Close"]
+            except:
+                continue
+
+            percent_increase = ((day2 - day1) / day1) * 100
+
+            file_data = open("wiki_data/" + file, "r", encoding="latin1").read()
 
             tokens = self.tokenize(file_data)
 
-            if is_positive:
+            if percent_increase >= 1:
                 self.update_dict(tokens, self.pos_freqs)
+            elif -1 < percent_increase < 1:
+                self.update_dict(tokens, self.net_freqs)
             else:
                 self.update_dict(tokens, self.neg_freqs)
 
 
-        self.save_dict(self.pos_freqs, "pos.dat")
-        self.save_dict(self.neg_freqs, "neg.dat")
+        self.save_dict(self.pos_freqs, self.pos_filename)
+        self.save_dict(self.neg_freqs, self.neg_filename)
+        self.save_dict(self.net_freqs, self.net_filename)
 
         # files now holds a list of the filenames
         # self.training_data_directory holds the folder name where these files are
@@ -138,16 +154,19 @@ class BayesClassifier:
         # and negative probabilities are set to 0
         pp = 0
         pn = 0
+        pne = 0
 
         pl = sum(self.pos_freqs.values())
         nl = sum(self.neg_freqs.values())
+        pnl = sum(self.net_freqs.values())
 
         for token in tokens:
             pp += math.log((self.pos_freqs.get(token, 0) + 1) / pl)
             pn += math.log((self.neg_freqs.get(token, 0) + 1) / nl)
+            pne += math.log((self.net_freqs.get(token, 0) + 1) / pnl)
 
-        if pp > pn: return "positive"
-        elif pp == pn: return "neutral"
+        if pp > pn and pp > pne: return "positive"
+        elif pne >= pp and pne >= pn: return "neutral"
         else: return "negative"
 
         # get the sum of all of the frequencies of the features in each document class
