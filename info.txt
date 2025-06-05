@@ -20,3 +20,12 @@ Articles:
 Sentiment Analysis
 Time Published
 Publisher
+
+
+
+TO DO:
+
+proccess and collect wikinews
+
+
+wikinews lstm/Naive bayes with output being the stock

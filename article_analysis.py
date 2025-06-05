@@ -29,17 +29,6 @@ class Article:
 
 		self.stock_data = yf.download(self.stock, start=(self.date - time_range), end=(self.date + time_range), interval="1d")
 
-	def graph_data(self):
-		plt.figure(figsize=(10, 5))
-		plt.plot(self.stock_data.index, self.stock_data["Close"], label=f"{self.stock} Close Price")
-		plt.title(f"{self.stock} Closing Price - May 2024")
-		plt.xlabel("Date")
-		plt.ylabel("Price ($)")
-		plt.grid(True)
-		plt.legend()
-		plt.tight_layout()
-		plt.show()
-
 
 
 
