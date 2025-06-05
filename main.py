@@ -16,6 +16,9 @@ def switch_stock(name):
 
 def print_stock(_): return [stock]
 
+def train_model(_):
+    pass
+
 def graph_data(matches):
     graph_type = matches[0]
 
@@ -41,6 +44,7 @@ pa_list: List[Tuple[Pattern, Action]] = [
     ("analyze %".split(), switch_stock),
     ("print data".split(), print_stock),
     ("graph stock %".split(), graph_data),
+    ("train sentiment analysis model".split(), train_model),
     (["bye"], bye_action),
 ]
 
