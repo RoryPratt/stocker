@@ -1,6 +1,7 @@
 from data_collection import Stock
 from typing import List, Callable, Tuple, Any, Match
 from match import match
+import matplotlib.pyplot as plt
 
 print("Stonks\n")
 stock = Stock(input("What stock do you want to analyze? "))
@@ -9,9 +10,29 @@ def bye_action(dummy: List[str]) -> None:
     raise KeyboardInterrupt
 
 def switch_stock(name):
+    global stock
     stock = Stock(name)
+    return ["success"]
 
 def print_stock(_): return [stock]
+
+def graph_data(matches):
+    graph_type = matches[0]
+
+    if graph_type not in ["open", "close", "high", "low", "volume"]: return ["invalid input"]
+
+    y = stock.historic_data[graph_type.capitalize()]
+    x = stock.historic_data.index
+
+    plt.plot(x, y, label=f"{graph_type}")
+
+    plt.xlabel("Day")
+    plt.ylabel(graph_type)
+    plt.title(f"{graph_type} over time for {stock.name}")
+    plt.legend()
+
+    plt.show()
+    return [""]
 
 Pattern = List[str]
 Action = Callable[[List[str]], List[Any]]
@@ -19,6 +40,7 @@ Action = Callable[[List[str]], List[Any]]
 pa_list: List[Tuple[Pattern, Action]] = [
     ("analyze %".split(), switch_stock),
     ("print data".split(), print_stock),
+    ("graph stock %".split(), graph_data),
     (["bye"], bye_action),
 ]
 

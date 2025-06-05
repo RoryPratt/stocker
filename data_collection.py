@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from nltk import word_tokenize, pos_tag, ne_chunk
 from nltk.tree import Tree
 from typing import List, Callable, Tuple, Any, Match
-
+import yfinance as yf
 
 def get_page_html(title: str) -> str:
     """Gets html of a wikipedia page
@@ -30,11 +30,21 @@ def get_first_infobox_text(html: str) -> str:
         html of just the first infobox
     """
     soup = BeautifulSoup(html, "html.parser")
-    results = soup.find_all(class_="infobox")
+    infobox = soup.find("table", class_="infobox")
 
-    if not results:
+    if not infobox:
         raise LookupError("Page has no infobox")
-    return results[0].text
+
+    info = {}
+    for row in infobox.find_all("tr"):
+        header = row.find("th")
+        data = row.find("td")
+        if header and data:
+            key = header.get_text(" ", strip=True)
+            value = data.get_text(" ", strip=True)
+            info[key] = value
+
+    return info
 
 
 def clean_text(text: str) -> str:
@@ -76,34 +86,35 @@ def get_match(
 
 class Stock:
     def __init__(self, name):
-        self.name = name
+        if type(name) == str:
+            self.name = name
+        else:
+            self.name = name[0]
         self.raw_wiki = ""
-        self.patterns = [
-            #r"Traded asNasdaq: (?P<ticker>[A-Z]+)Nas",
-            r"Industry(?P<industry>[[A-Z][a-z ]+]+)[A-Z][a-z0-9]+",
-            #r"Number of employees(?P<employees>[0-9,]+)",
-            #r"Area served(?P<area_served>\w+)Key"
-        ]
-        
+        self.ticker = None
+        self.industry = None
+        self.employees = None
         self.load_stock()
+        self.historic_data = self.get_historic_data()
+        #self.recent_articles = self.get_recent_articles()
 
     def __str__(self):
         return f"Name: {self.ticker} / {self.name} \nIndustry: {self.industry}\nNumber of Employees: {self.employees}"
 
     def load_stock(self):
-        infobox_text = clean_text(get_first_infobox_text(get_page_html(self.name)))
+        infobox_text = get_first_infobox_text(get_page_html(self.name))
         self.raw_wiki = infobox_text
-
-        print(self.raw_wiki)
 
         error_text = (
             "Page infobox has no information"
         )
 
-        pattern = "".join(f"(?=.*{p})" for p in self.patterns)
-        
-        match = get_match(infobox_text, pattern, error_text)
+        self.ticker = get_match(infobox_text["Traded as"], r"Nasdaq : (?P<ticker>[A-Z]+)", error_text).group("ticker")
+        self.industry = re.findall(r"[A-Z][a-z ]+", infobox_text["Industry"])
+        self.industry = [industry[:-1] if industry.endswith(" ") else industry for industry in self.industry]
+        self.employees = int(get_match(infobox_text["Number of employees"], r"(?P<employees>[0-9,]+)", error_text).group("employees").replace(",", ""))
 
-        self.ticker = match.group("ticker")
-        self.industry = match.group("industry")
-        self.employees = match.group("employees")
+    def get_historic_data(self):
+        ticker = yf.Ticker(self.ticker)
+
+        return ticker.history(period="1y", interval="1d")
