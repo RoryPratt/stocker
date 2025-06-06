@@ -3,6 +3,7 @@ from typing import List, Callable, Tuple, Any, Match
 from match import match
 import matplotlib.pyplot as plt
 from naive_classifier import BayesClassifier
+from lstm import LSTMModel
 
 print("Stonks\n")
 stock = Stock(input("What stock do you want to analyze? "))
@@ -23,12 +24,38 @@ def train_model(_):
     bayes = BayesClassifier(stock.historic_data, stock.ticker)
 
 
-    #inputs
+    #inputs: 
+    # open, close, high, low, volume, wiki_sentiment - 3, 
+    # employees, industry in wiki file, ticker in wiki file
 
+    x_seq = []
+    x_norm = []
+    y = []
+
+    dates = stock.historic_data.index
+
+    trimmed = dates[:len(dates) - (len(dates) % 4)]
+    groups = [trimmed[i:i+4] for i in range(0, len(trimmed), 4)]
+
+    for group in groups:
+        new_x = []
+        for idx, date in enumerate(group):
+            if idx == 3:
+                y.append(stock.historic_data.loc[date, "Close"])
+                continue
+
+            with open(f"wiki_data/wiki_{date}.txt", "r") as file:
+                text = file.read()
+
+            p, ne, n = bayes.classify(text)
+
+            new_x.append([stock.historic_data.loc[date, "Open"], stock.historic_data.loc[date, "High"], stock.historic_data.loc[date, "Low"], stock.historic_data.loc[date, "Close"], stock.historic_data.loc[date, "Volume"], p, ne, n])
+        x_seq.append(new_x)
+        x_norm.append
     #outputs
 
 
-    #mlpclassifier
+    model = HybridLSTMNet(8, lstm_hidden_size=64, static_input_size=5, hidden_fc_size=32, output_size=1)
     
     return [bayes.classify("how do you do today war war war.")]
 

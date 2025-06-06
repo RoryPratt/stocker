@@ -165,9 +165,9 @@ class BayesClassifier:
             pn += math.log((self.neg_freqs.get(token, 0) + 1) / nl)
             pne += math.log((self.net_freqs.get(token, 0) + 1) / pnl)
 
-        if pp > pn and pp > pne: return "positive"
-        elif pne >= pp and pne >= pn: return "neutral"
-        else: return "negative"
+        if pp > pn and pp > pne: return (1, 0, 0)
+        elif pne >= pp and pne >= pn: return (0, 1, 0)
+        else: return (0, 0, 1)
 
         # get the sum of all of the frequencies of the features in each document class
         # (i.e. how many words occurred in all documents for the given class) - this

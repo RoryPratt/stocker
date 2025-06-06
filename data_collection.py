@@ -94,7 +94,12 @@ class Stock:
         self.ticker = None
         self.industry = None
         self.employees = None
-        self.load_stock()
+
+        try: 
+            self.load_stock()
+        except:
+            self.load_stock()
+
         self.historic_data = self.get_historic_data()
         #self.recent_articles = self.get_recent_articles()
 
@@ -103,16 +108,17 @@ class Stock:
 
     def load_stock(self):
         infobox_text = get_first_infobox_text(get_page_html(self.name))
+
         self.raw_wiki = infobox_text
 
         error_text = (
             "Page infobox has no information"
         )
 
-        self.ticker = get_match(infobox_text["Traded as"], r"Nasdaq : (?P<ticker>[A-Z]+)", error_text).group("ticker")
+        self.ticker = get_match(infobox_text["Traded as"], r":\s*(?P<ticker>[A-Z]+)", error_text + f" {self.name}").group("ticker")
         self.industry = re.findall(r"[A-Z][a-z ]+", infobox_text["Industry"])
         self.industry = [industry[:-1] if industry.endswith(" ") else industry for industry in self.industry]
-        self.employees = int(get_match(infobox_text["Number of employees"], r"(?P<employees>[0-9,]+)", error_text).group("employees").replace(",", ""))
+        self.employees = int(get_match(infobox_text["Number of employees"], r"c*\.* *(?P<employees>[0-9,]+)", error_text).group("employees").replace(",", ""))
 
     def get_historic_data(self):
         ticker = yf.Ticker(self.ticker)
