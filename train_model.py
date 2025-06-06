@@ -24,6 +24,9 @@ else:
         pickle.dump(stocks, f)
 
 for stock in stocks:
+    
+    if stock.historic_data is None: continue 
+
     bayes = BayesClassifier(stock.historic_data, stock.ticker)
 
     dates = stock.historic_data.index

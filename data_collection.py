@@ -91,6 +91,7 @@ class Stock:
         else:
             self.name = name[0]
         self.raw_wiki = ""
+        self.find_historic_data = True
         self.ticker = None
         self.industry = None
         self.employees = None
@@ -100,27 +101,35 @@ class Stock:
         except:
             self.load_stock()
 
-        self.historic_data = self.get_historic_data()
+        if self.find_historic_data:
+            self.historic_data = self.get_historic_data()
+        else:
+            self.historic_data = None
         #self.recent_articles = self.get_recent_articles()
 
     def __str__(self):
         return f"Name: {self.ticker} / {self.name} \nIndustry: {self.industry}\nNumber of Employees: {self.employees}"
 
     def load_stock(self):
+        self.find_historic_data = True
         infobox_text = get_first_infobox_text(get_page_html(self.name))
 
         self.raw_wiki = infobox_text
 
         error_text = (
-            "Page infobox has no information"
+            f"Page infobox has no information: {self.ticker}"
         )
-
-        self.ticker = get_match(infobox_text["Traded as"], r":\s*(?P<ticker>[A-Z]+)", error_text + f" {self.name}").group("ticker")
-        self.industry = re.findall(r"[A-Z][a-z ]+", infobox_text["Industry"])
-        self.industry = [industry[:-1] if industry.endswith(" ") else industry for industry in self.industry]
-        self.employees = int(get_match(infobox_text["Number of employees"], r"c*\.* *(?P<employees>[0-9,]+)", error_text).group("employees").replace(",", ""))
+        try:
+            self.ticker = get_match(infobox_text["Traded as"], r":\s*(?P<ticker>[A-Z]+)", error_text + f" {self.name}").group("ticker")
+            self.industry = re.findall(r"[A-Z][a-z ]+", infobox_text["Industry"])
+            self.industry = [industry[:-1] if industry.endswith(" ") else industry for industry in self.industry]
+            self.employees = int(get_match(infobox_text["Number of employees"], r"c*\.* *(?P<employees>[0-9,]+)", error_text).group("employees").replace(",", ""))
+        except:
+            self.find_historic_data = False
 
     def get_historic_data(self):
         ticker = yf.Ticker(self.ticker)
 
-        return ticker.history(period="1y", interval="1d")
+        data = ticker.history(period="1y", interval="1d")
+
+        return None if data.empty else data
