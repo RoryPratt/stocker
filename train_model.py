@@ -1,70 +1,68 @@
-from naive_classifier import BayesClassifier
-#from lstm import LSTMModel
-import json
-import os
-import pickle
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from lstm import HybridLSTMNet
 import pandas as pd
-from data_collection import Stock
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+from sklearn.preprocessing import MinMaxScaler
 
-x_seq = []
-x_norm = []
-y = []
+model = HybridLSTMNet(8, 10, 3, 12, 1)
+criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+df = pd.read_pickle("ai_data.pkl")
 
-if os.path.exists("stocks.pkl"):
-    with open("stocks.pkl", "rb") as f:
-        stocks = pickle.load(f)
-else:
-    with open("companies.json", "r") as file:
-        data = json.load(file)
-
-    stocks = [Stock(stock["name"]) for stock in data["companies"]] # ADD WAY TO FAIL BAD STOCK
-
-    with open("stocks.pkl", "wb") as f:
-        pickle.dump(stocks, f)
-
-for stock in stocks:
-    
-    if stock.historic_data is None: continue 
-
-    bayes = BayesClassifier(stock.historic_data, stock.ticker)
-
-    dates = stock.historic_data.index
-
-    dates = [date.strftime("%Y-%m-%d %H:%M:%S").split()[0] for date in dates]
-
-    trimmed = dates[:len(dates) - (len(dates) % 4)]
-    groups = [trimmed[i:i+4] for i in range(0, len(trimmed), 4)]
-
-    for group in groups:
-        new_x = []
-        ind_in_news = False
-        ticker_in_news = False
-
-        for idx, date in enumerate(group):
-            if idx == 3:
-                y.append(stock.historic_data.loc[date, "Close"])
-                continue
-
-            with open(f"wiki_data/wiki_{date}.txt", "r") as file:
-                text = file.read()
-
-            if stock.ticker in text: ticker_in_news = True
-            if any(word in text for word in stock.industry): ind_in_news = True
-
-            p, ne, n = bayes.classify(text)
-
-            new_x.append([stock.historic_data.loc[date, "Open"], stock.historic_data.loc[date, "High"], stock.historic_data.loc[date, "Low"], stock.historic_data.loc[date, "Close"], stock.historic_data.loc[date, "Volume"], p, ne, n])
-        x_seq.append(new_x)
-        x_norm.append([stock.employees, int(ind_in_news), int(ticker_in_news)])
+df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 
 
-proccessed_data = {
-    "x_seq": x_seq,
-    "x_norm": x_norm,
-    "y": y
-}
+x_seq = df["x_seq"].apply(lambda x: np.array(x, dtype=np.float32))
+x_seq_array = np.stack(x_seq.to_numpy())
+x = torch.tensor(x_seq_array, dtype=torch.float32)
 
-df = pd.DataFrame(proccessed_data)
+static_input = np.stack(df["x_norm"].to_numpy())
+static = torch.tensor(static_input, dtype=torch.float32)
 
-df.to_pickle("ai_data.pkl")
+y = torch.tensor(df["y"].values, dtype=torch.float32).unsqueeze(1)
+
+for epoch in range(100):
+    model.train()
+    optimizer.zero_grad()
+
+    output = model(x, static)
+    loss = criterion(output, y)
+
+    loss.backward()
+    optimizer.step()
+
+    print(f"Epoch {epoch}, Loss: {loss.item():.4f}")
+
+torch.save(model.state_dict(), "model_weights.pth")
+
+
+x_seq = test_df["x_seq"].apply(lambda x: np.array(x, dtype=np.float32))
+x_seq_array = np.stack(x_seq.to_numpy())
+x = torch.tensor(x_seq_array, dtype=torch.float32)
+
+static_input = np.stack(test_df["x_norm"].to_numpy())
+static = torch.tensor(static_input, dtype=torch.float32)
+
+y = torch.tensor(test_df["y"].values, dtype=torch.float32).unsqueeze(1)
+
+model.eval()
+with torch.no_grad():
+    preds = model(x, static).detach().numpy()
+    true = y.numpy()
+
+    nonzero_mask = true != 0
+    mape = np.mean(np.abs((preds[nonzero_mask] - true[nonzero_mask]) / true[nonzero_mask])) * 100
+
+    print(f"MAPE: {mape:.2f}%")
+
+
+"""
+model = MyModel()  # Re-initialize model with same architecture
+model.load_state_dict(torch.load("model_weights.pth"))
+model.eval()
+"""
