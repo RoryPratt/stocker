@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from lstm import HybridLSTMNet
 import pandas as pd
+import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -33,6 +34,17 @@ static = torch.tensor(static_input_scaled, dtype=torch.float32)
 y = df["y"].values.reshape(-1, 1)
 y_scaled = y_scaler.fit_transform(y)
 y = torch.tensor(y_scaled, dtype=torch.float32)
+
+
+with open("y_scaler.pkl", "wb") as f:
+    joblib.dump(y_scaler, f)
+
+with open("seq_scaler.pkl", "wb") as f:
+    joblib.dump(scaler_seq, f)
+
+with open("static_scaler.pkl", "wb") as f:
+    joblib.dump(scaler_static, f)
+
 
 for epoch in range(1000):
     model.train()

@@ -3,6 +3,16 @@ from bs4 import BeautifulSoup
 import re, string
 from datetime import datetime, timedelta
 
+def generate_wiki_url(date_str):
+    base_url = "https://en.wikipedia.org/wiki/Portal:Current_events"
+
+    date = datetime.strptime(date_str, "%Y-%m-%d")
+
+    formatted = f"{date.year}_{date.strftime('%B')}_{date.day}"
+    url = f"{base_url}/{formatted}"
+
+    return url
+
 def generate_wikipedia_event_urls(days_back=365):
     base_url = "https://en.wikipedia.org/wiki/Portal:Current_events"
     date_url_dict = {}
