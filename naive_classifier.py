@@ -1,6 +1,7 @@
 import math, os, pickle, re
 from typing import Tuple, List, Dict
 from datetime import datetime, timedelta
+import yfinance as yf
 
 class BayesClassifier:
     """A simple BayesClassifier implementation
@@ -15,7 +16,7 @@ class BayesClassifier:
         pos_file_prefix - prefix of positive reviews
     """
 
-    def __init__(self, stock_data, ticker):
+    def __init__(self):
         """Constructor initializes and trains the Naive Bayes Sentiment Classifier. If a
         cache of a trained classifier is stored in the current folder it is loaded,
         otherwise the system will proceed through training.  Once constructed the
@@ -25,12 +26,9 @@ class BayesClassifier:
         self.neg_freqs: Dict[str, int] = {}
         self.net_freqs: Dict[str, int] = {}
 
-        if not os.path.exists(f"ai/{ticker}"):
-            os.makedirs(f"ai/{ticker}")
-
-        self.pos_filename: str = f"ai/{ticker}/pos.dat"
-        self.neg_filename: str = f"ai/{ticker}/neg.dat"
-        self.net_filename: str = f"ai/{ticker}/net.dat"
+        self.pos_filename: str = f"ai/pos.dat"
+        self.neg_filename: str = f"ai/neg.dat"
+        self.net_filename: str = f"ai/net.dat"
         self.training_data_directory: str = "wiki_data/"
 
         # check if both cached classifiers exist within the current directory
@@ -41,9 +39,9 @@ class BayesClassifier:
             self.net_freqs = self.load_dict(self.net_filename)
         else:
             print("Data files not found - running training...")
-            self.train(stock_data)
+            self.train()
 
-    def train(self, stock_data) -> None:
+    def train(self) -> None:
         """Trains the Naive Bayes Sentiment Classifier
 
         Train here means generates `pos_freq/neg_freq` dictionaries with frequencies of
@@ -59,11 +57,15 @@ class BayesClassifier:
         if not files:
             raise RuntimeError(f"Couldn't find path {self.training_data_directory}")
         
+        ticker = yf.Ticker("^GSPC")
+
+        stock_data = ticker.history(period="3y", interval="1d")
+
         for file in files:
             date = datetime.strptime(file.split("_")[1].replace(".txt", ""), "%Y-%m-%d") + timedelta(days=1)
 
             try:
-                day1 = stock_data.loc[file.split("_")[1].replace(".txt", ""), "Close"]
+                day1 = stock_data.loc[file.split("_")[1].replace(".txt", ""), "Open"]
                 day2 = stock_data.loc[date.strftime("%Y-%m-%d"), "Close"]
             except:
                 continue
@@ -74,9 +76,9 @@ class BayesClassifier:
 
             tokens = self.tokenize(file_data)
 
-            if percent_increase >= 1:
+            if percent_increase >= 3:
                 self.update_dict(tokens, self.pos_freqs)
-            elif -1 < percent_increase < 1:
+            elif -3 < percent_increase < 3:
                 self.update_dict(tokens, self.net_freqs)
             else:
                 self.update_dict(tokens, self.neg_freqs)

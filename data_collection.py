@@ -130,6 +130,6 @@ class Stock:
     def get_historic_data(self):
         ticker = yf.Ticker(self.ticker)
 
-        data = ticker.history(period="1y", interval="1d")
+        data = ticker.history(period="max", interval="1d")
 
         return None if data.empty else data

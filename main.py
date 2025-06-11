@@ -3,9 +3,12 @@ from typing import List, Callable, Tuple, Any, Match
 from match import match
 import matplotlib.pyplot as plt
 from naive_classifier import BayesClassifier
+from ai import AI
 
 print("Stonks\n")
 stock = Stock(input("What stock do you want to analyze? "))
+ai = AI(stock)
+
 
 def bye_action(dummy: List[str]) -> None:
     raise KeyboardInterrupt
@@ -13,10 +16,44 @@ def bye_action(dummy: List[str]) -> None:
 def switch_stock(name):
     global stock
     stock = Stock(name)
+    ai = AI(stock)
     return [""]
 
 def print_stock(_): return [stock]
 
+def graph_predictions(predictions):
+    days = list(range(1, len(predictions) + 1))
+
+    opens = [p[0] for p in predictions]
+    highs = [p[1] for p in predictions]
+    lows  = [p[2] for p in predictions]
+    closes= [p[3] for p in predictions]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(days, opens, label='Open')
+    plt.plot(days, highs, label='High')
+    plt.plot(days, lows, label='Low')
+    plt.plot(days, closes, label='Close')
+
+    plt.title("Predicted Stock Prices")
+    plt.xlabel("Days Ahead")
+    plt.ylabel("Price")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def predict_future(matches):
+    prediction_window = int(matches[0])
+    date = matches[1]
+
+    prediction = ai.predict(date, prediction_window)
+
+    if len(prediction) < 3:
+        for i in range(len(prediction)):
+            print(f"Day {i + 1}\n\nOpen: {prediction[i][1]}\nHigh: {prediction[i][1]}\nLow: {prediction[i][2]}\nClose: {prediction[i][3]}\n")
+    else:
+        graph_predictions(prediction)
+    return [""]
 
 
 def graph_data(matches):
@@ -44,6 +81,7 @@ pa_list: List[Tuple[Pattern, Action]] = [
     ("analyze %".split(), switch_stock),
     ("print data".split(), print_stock),
     ("graph stock %".split(), graph_data),
+    ("predict the next % days after %".split(), predict_future),
     (["bye"], bye_action),
 ]
 

@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re, string
+import os
 from datetime import datetime, timedelta
 
 def generate_wiki_url(date_str):
@@ -13,7 +14,7 @@ def generate_wiki_url(date_str):
 
     return url
 
-def generate_wikipedia_event_urls(days_back=365):
+def generate_wikipedia_event_urls(days_back=365*3):
     base_url = "https://en.wikipedia.org/wiki/Portal:Current_events"
     date_url_dict = {}
 
@@ -58,10 +59,11 @@ def clean_text(text: str) -> str:
 #print(text) 
 
 
-#urls = generate_wikipedia_event_urls()
+urls = generate_wikipedia_event_urls()
 
-#for date, url in urls.items():
-#    text = clean_text(scrape_wiki_current_events(url))
-#    
-#    with open(f"wiki_data\wiki_{date}.txt", "w", encoding="utf-8") as f:
-#        f.write(text)
+for date, url in urls.items():
+    if os.path.exists(f"wiki_data\wiki_{date}.txt"): continue
+    text = clean_text(scrape_wiki_current_events(url))
+    
+    with open(f"wiki_data\wiki_{date}.txt", "w", encoding="utf-8") as f:
+        f.write(text)
