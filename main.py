@@ -4,6 +4,7 @@ from match import match
 import matplotlib.pyplot as plt
 from naive_classifier import BayesClassifier
 from ai import AI
+from datetime import datetime, timedelta
 
 print("Stonks\n")
 stock = Stock(input("What stock do you want to analyze? "))
@@ -56,6 +57,46 @@ def predict_future(matches):
     return [""]
 
 
+def show_price(matches):
+    start = datetime.strptime(matches[0], "%Y-%m-%d")
+    end = datetime.strptime(matches[1], "%Y-%m-%d")
+
+    delta = (end - start).days
+    dates = [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(delta + 1)]
+
+    opens = []
+    highs = []
+    lows = []
+    closes = []
+
+    for date in dates:
+        if date in stock.historic_data.index:
+            row = stock.historic_data.loc[date]
+            opens.append(row['Open'])
+            highs.append(row['High'])
+            lows.append(row['Low'])
+            closes.append(row['Close'])
+        else:
+            opens.append(None)
+            highs.append(None)
+            lows.append(None)
+            closes.append(None)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(dates, opens, label='Open')
+    plt.plot(dates, highs, label='High')
+    plt.plot(dates, lows, label='Low')
+    plt.plot(dates, closes, label='Close')
+
+    plt.title("Predicted Stock Prices")
+    plt.xlabel("Days Ahead")
+    plt.ylabel("Price")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    return [""]
+        
 def graph_data(matches):
     graph_type = matches[0]
 
@@ -82,6 +123,7 @@ pa_list: List[Tuple[Pattern, Action]] = [
     ("print data".split(), print_stock),
     ("graph stock %".split(), graph_data),
     ("predict the next % days after %".split(), predict_future),
+    ("stock price from % to %".split(), show_price),
     (["bye"], bye_action),
 ]
 
